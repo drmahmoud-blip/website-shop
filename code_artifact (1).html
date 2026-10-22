@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لبسني | متجر الأزياء والأحذية العصرية</title>
+    
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            white: '#ffffff',
+                            light: '#f8fafc',
+                            green: '#10b981',
+                            darkGreen: '#059669',
+                            lightGreen: '#ecfdf5',
+                            lightBlue: '#e0f2fe',
+                            blue: '#0284c7',
+                            dark: '#0f172a',
+                            slate: '#1e293b',
+                            gray: '#64748b'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Shared Supabase Configuration & Helpers -->
+    <script src="supabase-config.js"></script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+        
+        .progress-bar-landing {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #0284c7);
+            transition: width 2.5s ease-in-out;
+        }
+
+        /* Product Card Enhancements */
+        .product-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.2);
+        }
+
+        /* Hide Scrollbar */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Toast */
+        .toast {
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes pulse-cart {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        .pulse-animation {
+            animation: pulse-cart 0.35s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-brand-dark antialiased selection:bg-brand-green selection:text-white">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed bottom-5 left-5 z-50 bg-brand-dark text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+        <i id="toast-icon" class="fas fa-check-circle text-brand-green text-xl"></i>
+        <span id="toast-message" class="text-xs sm:text-sm font-bold">تمت الإضافة بنجاح!</span>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SPLASH INTRO SCREEN (Quick & Elegant) -->
+    <!-- ========================================== -->
+    <div id="view-landing" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div class="text-center animate-pulse mb-6">
+            <div class="w-28 h-28 bg-gradient-to-tr from-brand-darkGreen to-brand-green rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-brand-green/30">
+                <i class="fas fa-shopping-bag text-white text-5xl"></i>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-black text-brand-dark tracking-tight mb-2">لِبِسْنِي</h1>
+            <p class="text-brand-gray text-base font-semibold">أناقتك تبدأ من هنا.. لكل العائلة</p>
+        </div>
+
+        <div class="flex gap-4 mb-8 text-brand-blue text-2xl">
+            <span class="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center hover:scale-110 transition-transform"><i class="fas fa-tshirt"></i></span>
+            <span class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center hover:scale-110 transition-transform text-brand-green"><i class="fas fa-shoe-prints"></i></span>
+            <span class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center hover:scale-110 transition-transform text-purple-600"><i class="fas fa-child"></i></span>
+            <span class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center hover:scale-110 transition-transform text-pink-500"><i class="fas fa-female"></i></span>
+        </div>
+
+        <div class="w-64 max-w-full">
+            <p class="text-center text-xs text-brand-gray mb-2 font-medium">جاري مزامنة المنتجات من Supabase...</p>
+            <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div id="progress-bar" class="progress-bar-landing rounded-full"></div>
+            </div>
+        </div>
+
+        <button onclick="skipToStore()" class="mt-6 px-7 py-2.5 bg-brand-lightGreen border-2 border-brand-green text-brand-darkGreen font-extrabold rounded-full hover:bg-brand-green hover:text-white transition-all duration-300 text-xs shadow-md">
+            دخول المتجر الآن (تخطي) <i class="fas fa-arrow-left mr-1"></i>
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MAIN STORE VIEW -->
+    <!-- ========================================== -->
+    <div id="view-store" class="hidden min-h-screen flex flex-col">
+        
+        <!-- Header Top -->
+        <header class="bg-brand-slate text-white sticky top-0 z-40 shadow-lg border-b border-slate-700/60">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                
+                <!-- Logo -->
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="goHome()">
+                    <div class="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center shadow-md shadow-brand-green/30 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-shopping-bag text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-2xl font-black tracking-tight text-white block leading-none">لبسني</span>
+                        <span class="text-[10px] text-brand-green font-bold">Labbesni Fashion</span>
+                    </div>
+                </div>
+
+                <!-- Search Bar (Live Dynamic Search) -->
+                <div class="hidden md:flex flex-1 max-w-xl bg-white rounded-xl overflow-hidden text-brand-dark focus-within:ring-2 focus-within:ring-brand-green shadow-inner">
+                    <select id="header-category-select" onchange="onCategorySelectChange(this.value)" class="bg-slate-50 border-l border-slate-200 px-3 py-2 text-xs font-bold outline-none cursor-pointer text-slate-700">
+                        <option value="all">جميع الأقسام</option>
+                    </select>
+                    <input type="text" id="store-search-input" oninput="handleSearch(this.value)" placeholder="ابحث عن أحدث الأزياء، الأحذية، الأسعار..." class="w-full px-4 py-2 text-xs outline-none">
+                    <button class="bg-brand-green hover:bg-brand-darkGreen text-white px-5 transition-colors">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+                <!-- Header Actions -->
+                <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                    
+                    <!-- Track Order Button -->
+                    <button onclick="openOrderTrackerModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white flex items-center gap-1.5 border border-slate-700 transition-all" title="متابعة مراحل طلبك">
+                        <i class="fas fa-truck-fast text-brand-green"></i>
+                        <span class="font-bold hidden sm:inline">متابعة طلبك</span>
+                    </button>
+
+                    <!-- User Auth Indicator / Login Link -->
+                    <div id="header-auth-container" class="flex items-center gap-2">
+                        <!-- Injected dynamically via JS: Login button OR User profile + Logout -->
+                    </div>
+                    
+                    <!-- Cart Button -->
+                    <button onclick="goToCheckout()" class="relative flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-xl transition-colors border border-slate-700 group">
+                        <div class="relative">
+                            <i class="fas fa-shopping-cart text-lg text-brand-green"></i>
+                            <span id="cart-count" class="absolute -top-2.5 -right-2.5 bg-brand-blue text-white text-[11px] font-black rounded-full w-5 h-5 flex items-center justify-center border-2 border-brand-slate transition-transform shadow-md">0</span>
+                        </div>
+                        <span class="font-bold hidden sm:block text-slate-200">السلة</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Search Bar -->
+            <div class="md:hidden px-4 pb-3">
+                <div class="flex bg-white rounded-xl overflow-hidden text-brand-dark shadow-inner">
+                    <input type="text" id="mobile-search-input" oninput="handleSearch(this.value)" placeholder="ابحث في لبسني..." class="w-full px-3 py-2 outline-none text-xs">
+                    <button class="bg-brand-green text-white px-4">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Sub-Header Categories Navigation -->
+        <nav class="bg-brand-dark text-white text-xs shadow-md border-b border-slate-800">
+            <div id="subnav-categories" class="container mx-auto px-4 overflow-x-auto hide-scrollbar whitespace-nowrap py-2.5 flex items-center gap-5">
+                <button onclick="filterProducts('all')" class="nav-cat-btn active text-brand-green font-bold flex items-center gap-1.5 pb-1 border-b-2 border-brand-green" data-category="all">
+                    <i class="fas fa-border-all"></i>
+                    <span>جميع المنتجات</span>
+                </button>
+                <!-- Categories dynamically loaded from Supabase -->
+            </div>
+        </nav>
+
+        <!-- Main Storefront Content -->
+        <main class="flex-1 container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-6">
+            
+            <!-- Sidebar Filters (Desktop) -->
+            <aside class="hidden lg:block w-64 flex-shrink-0">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 sticky top-28 space-y-6">
+                    
+                    <!-- Categories List -->
+                    <div>
+                        <h3 class="font-extrabold text-sm text-brand-dark mb-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                            <span>الأقسام</span>
+                            <i class="fas fa-layer-group text-brand-green text-xs"></i>
+                        </h3>
+                        <ul id="sidebar-categories-list" class="space-y-2 text-xs font-semibold text-brand-gray">
+                            <!-- Injected from Supabase -->
+                        </ul>
+                    </div>
+
+                    <!-- Price Filter -->
+                    <div>
+                        <h3 class="font-extrabold text-sm text-brand-dark mb-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                            <span>تصفية السعر</span>
+                            <i class="fas fa-dollar-sign text-brand-green text-xs"></i>
+                        </h3>
+                        <div class="space-y-2 text-xs font-semibold text-brand-gray">
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-green">
+                                <input type="radio" name="price-filter" value="all" checked onchange="filterByPrice(this.value)" class="accent-brand-green">
+                                <span>جميع الأسعار</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-green">
+                                <input type="radio" name="price-filter" value="under-30" onchange="filterByPrice(this.value)" class="accent-brand-green">
+                                <span>أقل من 30 $</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-green">
+                                <input type="radio" name="price-filter" value="30-60" onchange="filterByPrice(this.value)" class="accent-brand-green">
+                                <span>من 30 $ إلى 60 $</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-green">
+                                <input type="radio" name="price-filter" value="over-60" onchange="filterByPrice(this.value)" class="accent-brand-green">
+                                <span>أكثر من 60 $</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Trust Box -->
+                    <div class="bg-emerald-50 rounded-xl p-3 border border-emerald-100 text-[11px] text-emerald-900 space-y-1.5">
+                        <p class="font-bold flex items-center gap-1.5 text-emerald-800">
+                            <i class="fas fa-shield-halved text-brand-green"></i> تسوق آمن 100%
+                        </p>
+                        <p class="text-slate-600">تحديث فوري لأسعار المنتجات مع تتبع مستمر لمراحل تجهيز الشحنات.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Products View Grid -->
+            <div class="flex-1 flex flex-col">
+                
+                <!-- Category Title & Sorting Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-brand-dark flex items-center gap-2" id="category-title">
+                            <span>جميع المنتجات</span>
+                        </h2>
+                        <p id="products-count-text" class="text-xs text-brand-gray mt-0.5 font-medium">جاري تحميل المنتجات من Supabase...</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <span class="text-xs text-slate-400 font-bold whitespace-nowrap">الترتيب:</span>
+                        <select id="sort-select" onchange="sortProducts(this.value)" class="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand-green cursor-pointer">
+                            <option value="featured">الموصى به</option>
+                            <option value="price-asc">السعر: من الأقل للأعلى</option>
+                            <option value="price-desc">السعر: من الأعلى للأقل</option>
+                            <option value="rating">الأعلى تقييماً</option>
+                            <option value="newest">الأحدث</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Products Grid Container -->
+                <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <!-- Products dynamically rendered -->
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="bg-brand-dark text-slate-400 py-10 mt-auto border-t-4 border-brand-green">
+            <div class="container mx-auto px-4 text-center">
+                <div class="text-2xl font-black text-white mb-2 flex items-center justify-center gap-2">
+                    <i class="fas fa-shopping-bag text-brand-green"></i> 
+                    <span>لبسني</span>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-5">
+                    وجهتك الأولى للأناقة والأزياء العصرية في الوطن العربي. متصل بقاعدة بيانات سحابية Supabase لتحديث مستمر للأسعار ومتابعة لحظية لطلبات العملاء.
+                </p>
+                <div class="flex justify-center gap-4 text-lg text-slate-400 mb-6">
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-brand-green hover:text-white flex items-center justify-center transition-all"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-brand-green hover:text-white flex items-center justify-center transition-all"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-brand-green hover:text-white flex items-center justify-center transition-all"><i class="fab fa-telegram-plane"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-brand-green hover:text-white flex items-center justify-center transition-all"><i class="fab fa-whatsapp"></i></a>
+                </div>
+                <p class="text-[11px] text-slate-600">جميع الحقوق محفوظة &copy; متجر لبسني</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CHECKOUT VIEW -->
+    <!-- ========================================== -->
+    <div id="view-checkout" class="hidden min-h-screen bg-slate-100 pb-16">
+        <!-- Checkout Header -->
+        <header class="bg-white shadow-sm py-4 border-b border-slate-200">
+            <div class="container mx-auto px-4 flex justify-between items-center">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="goToStore()">
+                    <div class="w-9 h-9 bg-brand-green rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <span class="text-xl font-black text-brand-dark">لبسني</span>
+                </div>
+                <h1 class="text-base sm:text-lg font-black text-slate-800">تأكيد الطلب والشحن</h1>
+                <button onclick="goToStore()" class="text-xs sm:text-sm text-brand-blue hover:text-brand-darkGreen font-bold flex items-center gap-1.5 transition-colors">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>العودة للتسوق</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-8 max-w-5xl">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Order Summary (Cart Items) -->
+                <div class="lg:col-span-1 order-2 lg:order-1">
+                    <div class="bg-white rounded-3xl shadow-sm p-6 border border-slate-200">
+                        <h2 class="text-base font-extrabold mb-4 pb-3 border-b border-slate-100 flex items-center justify-between text-brand-dark">
+                            <span>ملخص سلة الشراء</span>
+                            <span id="checkout-cart-count" class="text-xs font-bold text-brand-green bg-emerald-50 px-2 py-0.5 rounded-full">0 عناصر</span>
+                        </h2>
+
+                        <div id="checkout-cart-items" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                            <!-- Cart items injected here -->
+                        </div>
+                        
+                        <div class="border-t border-slate-100 mt-4 pt-4 space-y-2 text-xs">
+                            <div class="flex justify-between text-slate-500 font-semibold">
+                                <span>المجموع الفرعي</span>
+                                <span id="checkout-subtotal" class="font-bold text-slate-800">0$</span>
+                            </div>
+                            <div class="flex justify-between text-slate-500 font-semibold">
+                                <span>تكلفة الشحن</span>
+                                <span class="text-brand-green font-bold bg-emerald-50 px-2 py-0.5 rounded">مجاني</span>
+                            </div>
+                            <div class="flex justify-between text-base font-black text-brand-dark mt-3 pt-3 border-t border-slate-100">
+                                <span>الإجمالي النهائي</span>
+                                <span id="checkout-total" class="text-emerald-600">0$</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Form -->
+                <div class="lg:col-span-2 order-1 lg:order-2">
+                    <div class="bg-white rounded-3xl shadow-sm p-6 sm:p-8 border border-slate-200">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-brand-green flex items-center justify-center font-black text-lg">
+                                <i class="fas fa-location-dot"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-black text-brand-dark">بيانات المستلم والشحن</h2>
+                                <p class="text-xs text-slate-400">سيتم حفظ طلبك فوراً في قاعدة البيانات لمتابعة تقدم الشحنة</p>
+                            </div>
+                        </div>
+                        
+                        <form id="checkout-form" class="space-y-4 text-xs" onsubmit="event.preventDefault(); submitClientOrder();">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">الاسم الكامل *</label>
+                                    <input type="text" id="customer-name" required placeholder="أدخل اسمك الكريم" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">رقم الهاتف / الواتساب *</label>
+                                    <input type="tel" id="customer-phone" required placeholder="مثال: +966501234567" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white font-semibold" dir="ltr">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">الدولة *</label>
+                                    <select id="customer-country" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white font-semibold">
+                                        <option value="">اختر الدولة</option>
+                                        <option value="السعودية">المملكة العربية السعودية</option>
+                                        <option value="مصر">جمهورية مصر العربية</option>
+                                        <option value="الإمارات">الإمارات العربية المتحدة</option>
+                                        <option value="الكويت">الكويت</option>
+                                        <option value="قطر">قطر</option>
+                                        <option value="الأردن">الأردن</option>
+                                        <option value="المغرب">المغرب</option>
+                                        <option value="سلطنة عمان">سلطنة عمان</option>
+                                        <option value="البحرين">البحرين</option>
+                                        <option value="أخرى">دولة أخرى</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">المدينة *</label>
+                                    <input type="text" id="customer-city" required placeholder="مثال: الرياض / القاهرة / دبي" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white font-semibold">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">العنوان بالتفصيل ورقم المبنى *</label>
+                                <textarea id="customer-address" required rows="2" placeholder="الشارع، اسم الحي، رقم المبنى..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white font-semibold"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">ملاحظات إضافية على الطلب (اختياري)</label>
+                                <input type="text" id="customer-notes" placeholder="أي تفاصيل خاصة بتسليم الشحنة أو المقاس..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-green focus:bg-white">
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div class="flex items-center gap-2 text-slate-500 text-xs">
+                                    <i class="fas fa-lock text-brand-green"></i>
+                                    <span>بياناتك مشفرة ومحفوظة بأمان</span>
+                                </div>
+                                <button type="submit" id="btn-submit-order" class="w-full sm:w-auto bg-brand-green hover:bg-brand-darkGreen text-white font-extrabold py-3.5 px-8 rounded-2xl shadow-lg shadow-brand-green/30 hover:shadow-xl transition-all flex items-center justify-center gap-2 text-sm">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>تأكيد الطلب ومتابعة مراحله</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ORDER SUCCESS & BUYING PROGRESS MODAL -->
+    <!-- ========================================== -->
+    <div id="order-success-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 text-center animate-scale">
+            
+            <div class="w-16 h-16 bg-emerald-100 text-brand-green rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fas fa-check"></i>
+            </div>
+            
+            <h3 class="text-2xl font-black text-brand-dark mb-1">تم تأكيد طلبك بنجاح!</h3>
+            <p class="text-xs text-brand-gray mb-4 font-semibold">
+                رقم طلبك في قاعدة البيانات: <span id="modal-order-id" class="font-black text-brand-dark font-mono bg-slate-100 px-2.5 py-1 rounded-lg">#000</span>
+            </p>
+
+            <!-- Real-time Buying Progress Bar for Client -->
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6 text-right">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-brand-dark flex items-center gap-1.5">
+                        <i class="fas fa-truck text-brand-green"></i>
+                        <span>مرحلة شراء طلبك: <strong class="text-brand-green">قيد المراجعة والتجهيز</strong></span>
+                    </span>
+                    <span class="text-xs font-mono font-bold text-slate-500">25%</span>
+                </div>
+
+                <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mb-3">
+                    <div class="bg-brand-green h-full rounded-full" style="width: 25%"></div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1 text-center text-[10px]">
+                    <div class="text-brand-green font-bold">1. استلام الطلب</div>
+                    <div class="text-slate-400">2. التجهيز</div>
+                    <div class="text-slate-400">3. الشحن</div>
+                    <div class="text-slate-400">4. التسليم</div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="sendToTelegramAfterOrder()" id="btn-telegram-confirm" class="w-full bg-[#229ED9] hover:bg-[#1e8bc0] text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 text-xs transition-colors">
+                    <i class="fab fa-telegram-plane text-base"></i>
+                    <span>مشاركة تفاصيل الطلب عبر تليجرام</span>
+                </button>
+
+                <button onclick="closeSuccessModalAndGoStore()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-xl text-xs transition-colors">
+                    العودة للتسوق في المتجر
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CLIENT ORDER TRACKER MODAL (متابعة مراحل الشراء) -->
+    <!-- ========================================== -->
+    <div id="tracker-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-base font-black text-brand-dark flex items-center gap-2">
+                    <i class="fas fa-truck-fast text-brand-green"></i>
+                    <span>متابعة حالة مراحل الشراء لطلبك</span>
+                </h3>
+                <button onclick="closeOrderTrackerModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-xs text-brand-gray">أدخل رقم هاتفك أو رقم الطلب للاطلاع على حالة شحنتك المحدثة لحظياً من لوحة التحكم:</p>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="track-search-input" placeholder="رقم الهاتف أو رقم الطلب (مثال: 1 أو 050...)" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-green">
+                    <button onclick="searchClientOrders()" class="bg-brand-green hover:bg-brand-darkGreen text-white px-5 rounded-xl font-bold text-xs transition-colors flex items-center gap-1.5">
+                        <i class="fas fa-search"></i>
+                        <span>بحث</span>
+                    </button>
+                </div>
+
+                <div id="tracker-results" class="max-h-80 overflow-y-auto space-y-3 pt-2">
+                    <!-- Tracker cards will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let productsData = [];
+        let categoriesData = [];
+        let cart = [];
+        let timerId = null;
+        let currentCategory = 'all';
+        let currentSearchQuery = '';
+        let currentPriceFilter = 'all';
+        let currentSort = 'featured';
+        let lastCreatedOrder = null;
+
+        // On Page Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderHeaderAuth();
+
+            // Start splash progress bar
+            setTimeout(() => {
+                const pb = document.getElementById('progress-bar');
+                if (pb) pb.style.width = '100%';
+            }, 50);
+
+            // Fetch live data from Supabase in background
+            try {
+                await loadStoreData();
+            } catch (e) {
+                console.error("Error loading store data from Supabase:", e);
+            }
+
+            // Auto-transition to store after 2.5 seconds (or user can skip immediately)
+            timerId = setTimeout(() => {
+                goToStore();
+            }, 2600);
+        });
+
+        function renderHeaderAuth() {
+            const container = document.getElementById('header-auth-container');
+            if (!container) return;
+
+            const currentUser = ShopDB.getCurrentUser();
+            if (currentUser) {
+                if (currentUser.role === 'admin') {
+                    container.innerHTML = `
+                        <a href="admin.html" class="px-3 py-1.5 rounded-xl bg-brand-green/20 hover:bg-brand-green text-brand-green hover:text-white border border-brand-green/40 flex items-center gap-1.5 font-bold transition-all" title="لوحة تحكم الأسعار والطلبات">
+                            <i class="fas fa-user-shield"></i>
+                            <span class="hidden sm:inline">لوحة الإدارة</span>
+                        </a>
+                        <button onclick="ShopDB.logout()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 transition-colors" title="تسجيل الخروج">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                        </button>
+                    `;
+                } else {
+                    const safeName = SecurityHelper.escapeHTML(currentUser.name || 'العميل');
+                    container.innerHTML = `
+                        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                            <i class="fas fa-user-check text-brand-green"></i>
+                            <span class="font-bold text-slate-200 hidden sm:inline">${safeName}</span>
+                        </div>
+                        <button onclick="ShopDB.logout()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 transition-colors" title="تسجيل الخروج">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                        </button>
+                    `;
+                }
+            } else {
+                container.innerHTML = `
+                    <a href="login.html" class="px-3 py-1.5 rounded-xl bg-brand-green hover:bg-brand-darkGreen text-white flex items-center gap-1.5 font-bold shadow-md transition-all">
+                        <i class="fas fa-right-to-bracket text-xs"></i>
+                        <span>دخول / حساب</span>
+                    </a>
+                `;
+            }
+        }
+
+        async function loadStoreData() {
+            // Load Categories & Products from Supabase
+            const [categories, products] = await Promise.all([
+                ShopDB.getCategories(),
+                ShopDB.getProducts()
+            ]);
+
+            categoriesData = categories || [];
+            productsData = products || [];
+
+            renderCategoryNavigation();
+            applyFiltersAndRender();
+        }
+
+        function skipToStore() {
+            clearTimeout(timerId);
+            goToStore();
+        }
+
+        function goToStore() {
+            clearTimeout(timerId);
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-checkout').classList.add('hidden');
+            document.getElementById('view-store').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function goHome() {
+            goToStore();
+            filterProducts('all');
+        }
+
+        // ==========================================
+        // CATEGORY & NAVIGATION LOGIC
+        // ==========================================
+        function renderCategoryNavigation() {
+            // Sub-nav container
+            const subNav = document.getElementById('subnav-categories');
+            const selectOptions = document.getElementById('header-category-select');
+            const sidebarList = document.getElementById('sidebar-categories-list');
+
+            let subNavHtml = `
+                <button onclick="filterProducts('all')" class="nav-cat-btn ${currentCategory === 'all' ? 'text-brand-green font-black border-b-2 border-brand-green' : 'text-slate-300 hover:text-brand-green'} flex items-center gap-1.5 pb-1 transition-colors" data-category="all">
+                    <i class="fas fa-border-all"></i>
+                    <span>جميع المنتجات</span>
+                </button>
+            `;
+
+            let selectHtml = `<option value="all">جميع الأقسام</option>`;
+            let sidebarHtml = `
+                <li>
+                    <label class="flex items-center justify-between cursor-pointer hover:text-brand-green ${currentCategory === 'all' ? 'text-brand-green font-bold' : ''}" onclick="filterProducts('all')">
+                        <span class="flex items-center gap-2"><i class="fas fa-check-circle text-xs"></i> الكل</span>
+                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">${productsData.length}</span>
+                    </label>
+                </li>
+            `;
+
+            categoriesData.forEach(cat => {
+                const count = productsData.filter(p => p.category === cat.id).length;
+                const isActive = currentCategory === cat.id;
+
+                subNavHtml += `
+                    <button onclick="filterProducts('${cat.id}')" class="nav-cat-btn ${isActive ? 'text-brand-green font-black border-b-2 border-brand-green' : 'text-slate-300 hover:text-brand-green'} flex items-center gap-1.5 pb-1 transition-colors" data-category="${cat.id}">
+                        <i class="${cat.icon || 'fas fa-tag'} text-xs"></i>
+                        <span>${cat.name}</span>
+                    </button>
+                `;
+
+                selectHtml += `<option value="${cat.id}">${cat.name}</option>`;
+
+                sidebarHtml += `
+                    <li>
+                        <label class="flex items-center justify-between cursor-pointer hover:text-brand-green ${isActive ? 'text-brand-green font-bold' : ''}" onclick="filterProducts('${cat.id}')">
+                            <span class="flex items-center gap-2"><i class="${cat.icon || 'fas fa-tag'} text-xs"></i> ${cat.name}</span>
+                            <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">${count}</span>
+                        </label>
+                    </li>
+                `;
+            });
+
+            subNav.innerHTML = subNavHtml;
+            if (selectOptions) selectOptions.innerHTML = selectHtml;
+            if (sidebarList) sidebarList.innerHTML = sidebarHtml;
+        }
+
+        function filterProducts(categoryId) {
+            currentCategory = categoryId;
+            const catObj = categoriesData.find(c => c.id === categoryId);
+            const title = categoryId === 'all' ? 'جميع المنتجات' : (catObj ? catObj.name : 'المنتجات');
+            document.getElementById('category-title').innerHTML = `<span>${title}</span>`;
+            
+            renderCategoryNavigation();
+            applyFiltersAndRender();
+        }
+
+        function onCategorySelectChange(val) {
+            filterProducts(val);
+        }
+
+        function handleSearch(query) {
+            currentSearchQuery = (query || '').toLowerCase().trim();
+            applyFiltersAndRender();
+        }
+
+        function filterByPrice(range) {
+            currentPriceFilter = range;
+            applyFiltersAndRender();
+        }
+
+        function sortProducts(sortType) {
+            currentSort = sortType;
+            applyFiltersAndRender();
+        }
+
+        function applyFiltersAndRender() {
+            let filtered = [...productsData];
+
+            // Category
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(p => p.category === currentCategory);
+            }
+
+            // Search
+            if (currentSearchQuery) {
+                filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(currentSearchQuery));
+            }
+
+            // Price range
+            if (currentPriceFilter === 'under-30') {
+                filtered = filtered.filter(p => p.price < 30);
+            } else if (currentPriceFilter === '30-60') {
+                filtered = filtered.filter(p => p.price >= 30 && p.price <= 60);
+            } else if (currentPriceFilter === 'over-60') {
+                filtered = filtered.filter(p => p.price > 60);
+            }
+
+            // Sorting
+            if (currentSort === 'price-asc') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (currentSort === 'price-desc') {
+                filtered.sort((a, b) => b.price - a.price);
+            } else if (currentSort === 'rating') {
+                filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+            } else if (currentSort === 'newest') {
+                filtered.sort((a, b) => b.id - a.id);
+            }
+
+            renderProducts(filtered);
+        }
+
+        // ==========================================
+        // PRODUCT RENDERING
+        // ==========================================
+        function generateStars(rating = 4.8) {
+            let starsHtml = '';
+            for(let i = 1; i <= 5; i++) {
+                if(i <= rating) {
+                    starsHtml += '<i class="fas fa-star text-amber-400 text-[10px]"></i>';
+                } else if(i - 0.5 <= rating) {
+                    starsHtml += '<i class="fas fa-star-half-alt text-amber-400 text-[10px]"></i>';
+                } else {
+                    starsHtml += '<i class="far fa-star text-slate-300 text-[10px]"></i>';
+                }
+            }
+            return starsHtml;
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            const countText = document.getElementById('products-count-text');
+            grid.innerHTML = '';
+
+            countText.textContent = `يتم عرض ${products.length} من أصل ${productsData.length} منتج`;
+
+            if(products.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-200/80">
+                        <i class="fas fa-box-open text-5xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-bold text-slate-700">لا توجد منتجات مطابقة للبحث</h3>
+                        <p class="text-xs text-slate-400 mt-1">جرب تغيير معايير البحث أو اختيار قسم آخر.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            products.forEach(product => {
+                const discountHtml = product.old_price ? `<span class="text-xs text-slate-400 line-through mr-1 font-semibold">${product.old_price}$</span>` : '';
+                const badgeHtml = product.badge ? `<div class="absolute top-2.5 right-2.5 bg-brand-lightGreen text-brand-darkGreen text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm border border-brand-green/20">${product.badge}</div>` : '';
+                
+                // Sizes
+                const sizesArray = Array.isArray(product.sizes) ? product.sizes : (typeof product.sizes === 'string' ? JSON.parse(product.sizes || '[]') : []);
+                let sizesHtml = '';
+                if(sizesArray.length > 0) {
+                    sizesHtml = `<div class="mt-2 flex flex-wrap gap-1">`;
+                    sizesArray.forEach((size, idx) => {
+                        sizesHtml += `<span class="text-[10px] font-semibold border border-slate-200 rounded-md px-1.5 py-0.5 text-slate-600">${size}</span>`;
+                    });
+                    sizesHtml += `</div>`;
+                }
+
+                const card = `
+                    <div class="product-card bg-white rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col relative group">
+                        ${badgeHtml}
+                        <div class="h-48 overflow-hidden bg-slate-50 flex items-center justify-center p-3">
+                            <img src="${product.image}" alt="${product.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://placehold.co/400x500/f8fafc/10b981?text=صورة+المنتج'">
+                        </div>
+                        <div class="p-4 flex flex-col flex-1">
+                            <h3 class="font-bold text-xs sm:text-sm text-brand-dark mb-1 line-clamp-2" title="${product.name}">${product.name}</h3>
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <div class="flex">${generateStars(product.rating)}</div>
+                                <span class="text-[11px] text-slate-400 font-semibold">(${product.reviews || 80})</span>
+                            </div>
+                            <div class="mt-auto pt-2">
+                                <div class="flex items-baseline mb-2">
+                                    <span class="text-lg font-black text-brand-dark">${product.price} $</span>
+                                    ${discountHtml}
+                                </div>
+                                ${sizesHtml}
+                                <button onclick="addToCart(${product.id})" class="w-full mt-3 bg-emerald-50 hover:bg-brand-green hover:text-white text-brand-darkGreen border border-brand-green/30 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm">
+                                    <i class="fas fa-cart-plus"></i> أضف إلى السلة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        // ==========================================
+        // CART & CHECKOUT LOGIC
+        // ==========================================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-message').textContent = message;
+            
+            if(type === 'error') {
+                icon.className = 'fas fa-exclamation-circle text-rose-500 text-xl';
+            } else {
+                icon.className = 'fas fa-check-circle text-brand-green text-xl';
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function addToCart(productId) {
+            const product = productsData.find(p => p.id === productId);
+            if(!product) return;
+
+            const sizesArray = Array.isArray(product.sizes) ? product.sizes : (typeof product.sizes === 'string' ? JSON.parse(product.sizes || '[]') : []);
+            const defaultSize = sizesArray.length > 0 ? sizesArray[0] : 'قياسي';
+
+            const existingItem = cart.find(item => item.id === productId);
+            if(existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1, selectedSize: defaultSize });
+            }
+
+            updateCartBadge();
+            showToast(`تمت إضافة "${product.name}" للسلة بنجاح!`);
+            
+            const badge = document.getElementById('cart-count');
+            badge.classList.remove('pulse-animation');
+            void badge.offsetWidth;
+            badge.classList.add('pulse-animation');
+        }
+
+        function updateCartBadge() {
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            document.getElementById('cart-count').textContent = count;
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartBadge();
+            renderCheckout();
+            if(cart.length === 0) {
+                goToStore();
+            }
+        }
+
+        function updateQuantity(productId, delta) {
+            const item = cart.find(item => item.id === productId);
+            if(item) {
+                item.quantity += delta;
+                if(item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    renderCheckout();
+                    updateCartBadge();
+                }
+            }
+        }
+
+        function goToCheckout() {
+            if (cart.length === 0) {
+                showToast('السلة فارغة! أضف منتجات أولاً.', 'error');
+                return;
+            }
+
+            // Auto-fill customer details if logged in
+            const currentUser = ShopDB.getCurrentUser();
+            if (currentUser) {
+                const nameInput = document.getElementById('customer-name');
+                const phoneInput = document.getElementById('customer-phone');
+                if (nameInput && !nameInput.value) nameInput.value = currentUser.name || '';
+                if (phoneInput && !phoneInput.value) phoneInput.value = currentUser.phone || '';
+            }
+
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-store').classList.add('hidden');
+            document.getElementById('view-checkout').classList.remove('hidden');
+            window.scrollTo(0,0);
+            renderCheckout();
+        }
+
+        function renderCheckout() {
+            const container = document.getElementById('checkout-cart-items');
+            const checkoutCountBadge = document.getElementById('checkout-cart-count');
+            container.innerHTML = '';
+            let total = 0;
+            let totalItems = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                totalItems += item.quantity;
+
+                const safeName = SecurityHelper.escapeHTML(item.name);
+                const safeSize = SecurityHelper.escapeHTML(item.selectedSize);
+
+                container.innerHTML += `
+                    <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0">
+                        <img src="${item.image}" alt="${safeName}" class="w-14 h-14 object-cover rounded-xl border border-slate-200">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-xs text-brand-dark line-clamp-1">${safeName}</h4>
+                            <p class="text-[10px] text-slate-400 mb-1">المقاس: ${safeSize} · السعر: ${item.price}$</p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs font-bold">-</button>
+                                <span class="text-xs font-black w-4 text-center">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-black text-xs text-brand-dark">${itemTotal.toFixed(1)}$</p>
+                            <button onclick="removeFromCart(${item.id})" class="text-[10px] text-rose-500 hover:underline mt-1">حذف</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (checkoutCountBadge) checkoutCountBadge.textContent = `${totalItems} عناصر`;
+            document.getElementById('checkout-subtotal').textContent = `${total.toFixed(1)}$`;
+            document.getElementById('checkout-total').textContent = `${total.toFixed(1)}$`;
+        }
+
+        // ==========================================
+        // SUBMIT ORDER TO SUPABASE (With Anti-Injection Security)
+        // ==========================================
+        async function submitClientOrder() {
+            if(cart.length === 0) {
+                showToast('السلة فارغة!', 'error');
+                return;
+            }
+
+            const rawName = document.getElementById('customer-name').value;
+            const rawPhone = document.getElementById('customer-phone').value;
+            const rawCountry = document.getElementById('customer-country').value;
+            const rawCity = document.getElementById('customer-city').value;
+            const rawAddress = document.getElementById('customer-address').value;
+            const rawNotes = document.getElementById('customer-notes').value;
+
+            // Anti-Injection Security Filter
+            const fieldsToCheck = [rawName, rawPhone, rawCity, rawAddress, rawNotes];
+            for (const f of fieldsToCheck) {
+                const check = SecurityHelper.detectMaliciousPayload(f);
+                if (!check.safe) {
+                    showToast('تم رفض الإرسال: تم اكتشاف محاولة إدخال كود غير آمن في حقول البيانات.', 'error');
+                    return;
+                }
+            }
+
+            // Sanitize values
+            const name = SecurityHelper.sanitizeText(rawName, 100);
+            const phone = SecurityHelper.sanitizePhone(rawPhone);
+            const country = SecurityHelper.sanitizeText(rawCountry, 50);
+            const city = SecurityHelper.sanitizeText(rawCity, 50);
+            const address = SecurityHelper.sanitizeText(rawAddress, 300);
+            const notes = SecurityHelper.sanitizeText(rawNotes, 300);
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // Clean items array for DB
+            const orderItems = cart.map(item => ({
+                id: item.id,
+                name: SecurityHelper.sanitizeText(item.name, 150),
+                price: item.price,
+                quantity: item.quantity,
+                selectedSize: SecurityHelper.sanitizeText(item.selectedSize, 30) || 'قياسي'
+            }));
+
+            const btn = document.getElementById('btn-submit-order');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>جاري فحص البيانات وتأكيد الطلب في Supabase...</span>';
+
+            try {
+                // Save order to Supabase
+                const createdOrder = await ShopDB.createOrder({
+                    customer_name: name,
+                    customer_phone: phone,
+                    customer_country: country,
+                    customer_city: city,
+                    customer_address: address,
+                    items: orderItems,
+                    total_amount: total,
+                    status: 'pending',
+                    notes: notes || null
+                });
+
+                lastCreatedOrder = createdOrder;
+                cart = [];
+                updateCartBadge();
+
+                // Show Success Modal
+                document.getElementById('modal-order-id').textContent = `#ORD-${createdOrder.id}`;
+                document.getElementById('order-success-modal').classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Order submission error:", err);
+                showToast('حدث خطأ أثناء إرسال الطلب: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>تأكيد الطلب ومتابعة مراحله</span>';
+            }
+        }
+
+        function closeSuccessModalAndGoStore() {
+            document.getElementById('order-success-modal').classList.add('hidden');
+            goToStore();
+            document.getElementById('checkout-form').reset();
+        }
+
+        function sendToTelegramAfterOrder() {
+            if (!lastCreatedOrder) return;
+            const order = lastCreatedOrder;
+            
+            let message = `🛒 *طلب جديد عبر متجر لبسني (رقم #${order.id})*\n\n`;
+            message += `👤 *العميل:* ${order.customer_name}\n`;
+            message += `📱 *الهاتف:* ${order.customer_phone}\n`;
+            message += `🌍 *الموقع:* ${order.customer_country} - ${order.customer_city}\n`;
+            message += `📍 *العنوان:* ${order.customer_address}\n\n`;
+            message += `📦 *المنتجات المطلوبة:*\n`;
+            
+            (order.items || []).forEach((item, idx) => {
+                message += `${idx + 1}. ${item.name} (${item.selectedSize}) x ${item.quantity} = ${item.price * item.quantity}$\n`;
+            });
+
+            message += `\n💰 *الإجمالي الكلي:* ${order.total_amount}$ (الشحن مجاني)\n`;
+            message += `مرحلة الطلب: تم استلام الطلب وبانتظار التجهيز.`;
+
+            const url = `https://t.me/share/url?url=&text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // ==========================================
+        // CLIENT BUYING PROGRESS TRACKER MODAL
+        // ==========================================
+        function openOrderTrackerModal() {
+            document.getElementById('tracker-modal').classList.remove('hidden');
+            document.getElementById('track-search-input').focus();
+        }
+
+        function closeOrderTrackerModal() {
+            document.getElementById('tracker-modal').classList.add('hidden');
+        }
+
+        async function searchClientOrders() {
+            const query = (document.getElementById('track-search-input').value || '').trim();
+            const resultsContainer = document.getElementById('tracker-results');
+
+            if (!query) {
+                showToast('يرجى إدخال رقم الطلب أو رقم الهاتف', 'error');
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div class="py-6 text-center text-xs text-slate-400"><i class="fas fa-spinner fa-spin mr-1"></i> جاري البحث في Supabase...</div>';
+
+            try {
+                let orders = [];
+                // If it's a numeric ID
+                if (!isNaN(query) && Number(query) < 100000) {
+                    try {
+                        const single = await ShopDB.getOrderById(parseInt(query));
+                        if (single) orders = [single];
+                    } catch(e) {}
+                }
+
+                if (orders.length === 0) {
+                    orders = await ShopDB.getOrdersByPhone(query);
+                }
+
+                if (orders.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-2xl">
+                            <i class="fas fa-search text-3xl mb-2 text-slate-300"></i>
+                            <p class="text-xs font-bold">لم نتمكن من العثور على أي طلبات برقم "${query}"</p>
+                            <p class="text-[11px] text-slate-400 mt-1">تأكد من رقم الهاتف أو رقم الطلب المسجل.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                resultsContainer.innerHTML = orders.map(order => {
+                    const statusMeta = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+                    const items = Array.isArray(order.items) ? order.items : (typeof order.items === 'string' ? JSON.parse(order.items || '[]') : []);
+
+                    return `
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-xs text-right">
+                            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200">
+                                <span class="font-black text-brand-dark">طلب #${order.id}</span>
+                                <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] ${statusMeta.color}">
+                                    <i class="${statusMeta.icon}"></i> ${statusMeta.label}
+                                </span>
+                            </div>
+
+                            <p class="text-slate-600 mb-2 font-medium">${statusMeta.desc}</p>
+
+                            <!-- Progress Track -->
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mb-3">
+                                <div class="bg-brand-green h-full rounded-full" style="width: ${statusMeta.progressPercent}%"></div>
+                            </div>
+
+                            <div class="text-[11px] text-slate-500 space-y-1">
+                                <p><strong>العميل:</strong> ${order.customer_name} (${order.customer_phone})</p>
+                                <p><strong>العنوان:</strong> ${order.customer_country} - ${order.customer_city}</p>
+                                <p><strong>قيمة الطلب:</strong> ${order.total_amount}$ (${items.length} منتجات)</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                resultsContainer.innerHTML = `<div class="p-4 text-center text-rose-500 text-xs">حدث خطأ: ${err.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
