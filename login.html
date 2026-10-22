@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول | متجر لبسني</title>
+    
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            emerald: '#10b981',
+                            emeraldDark: '#059669',
+                            emeraldLight: '#ecfdf5',
+                            navy: '#0f172a',
+                            navyCard: '#1e293b',
+                            slate: '#334155',
+                            lightBg: '#f8fafc',
+                            blue: '#0284c7'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Shared Supabase Config & Security Module -->
+    <script src="supabase-config.js"></script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            min-height: 100vh;
+        }
+
+        .auth-tab.active {
+            background-color: #10b981;
+            color: #ffffff;
+            box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.35);
+        }
+
+        /* Pulse badge */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-badge {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased flex flex-col justify-between p-4 sm:p-6">
+
+    <!-- Top Simple Bar -->
+    <header class="max-w-md w-full mx-auto flex items-center justify-between py-2">
+        <a href="code_artifact (1).html" class="flex items-center gap-2 group">
+            <div class="w-9 h-9 rounded-xl bg-brand-emerald flex items-center justify-center text-white shadow-lg shadow-brand-emerald/30 group-hover:scale-105 transition-transform">
+                <i class="fas fa-shopping-bag text-base"></i>
+            </div>
+            <span class="text-xl font-black text-white">لبسني</span>
+        </a>
+
+        <div class="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+            <i class="fas fa-shield-halved text-brand-emerald"></i>
+            <span>حماية مشددة ضد الحقن</span>
+        </div>
+    </header>
+
+    <!-- Main Auth Card -->
+    <main class="max-w-md w-full mx-auto my-auto bg-slate-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-700/80">
+        
+        <!-- Header Title -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-white tracking-tight mb-1">بوابة الدخول للمتجر</h1>
+            <p class="text-xs text-slate-400">سجل الدخول كمدير للوحة التحكم أو كمستخدم للتسوق</p>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="bg-slate-900/80 p-1.5 rounded-2xl flex gap-1.5 mb-6 border border-slate-700/60">
+            <button onclick="switchAuthTab('login')" id="tab-login-btn" class="auth-tab active flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-right-to-bracket"></i>
+                <span>تسجيل الدخول</span>
+            </button>
+            <button onclick="switchAuthTab('register')" id="tab-register-btn" class="auth-tab flex-1 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-user-plus"></i>
+                <span>إنشاء حساب جديد</span>
+            </button>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="auth-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold flex items-start gap-2.5 transition-all">
+            <i id="auth-alert-icon" class="fas fa-circle-exclamation text-base mt-0.5"></i>
+            <span id="auth-alert-text" class="flex-1 leading-relaxed"></span>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FORM 1: LOGIN -->
+        <!-- ========================================== -->
+        <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs">
+            
+            <!-- Email Field -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">البريد الإلكتروني *</label>
+                <div class="relative">
+                    <input type="email" id="login-email" required placeholder="admin@lab.com أو بريدك الشخصي" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-3 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                    <i class="fas fa-envelope absolute left-3.5 top-3.5 text-slate-500"></i>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">كلمة المرور *</label>
+                <div class="relative">
+                    <input type="password" id="login-password" required placeholder="••••••••" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-3 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                    <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute left-3.5 top-3 text-slate-500 hover:text-slate-300">
+                        <i class="fas fa-eye text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 bg-brand-emerald hover:bg-brand-emeraldDark text-white font-extrabold text-sm rounded-xl shadow-lg shadow-brand-emerald/25 hover:shadow-brand-emerald/40 transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-right-to-bracket"></i>
+                <span>تسجيل الدخول ومتابعة</span>
+            </button>
+
+            <!-- Admin Credentials Shortcut Helper -->
+            <div class="mt-4 p-3 bg-slate-900/60 rounded-2xl border border-slate-700/60 text-center">
+                <p class="text-[11px] text-slate-400 mb-1.5">حساب إدارة المتجر المعتمد:</p>
+                <button type="button" onclick="fillAdminCredentials()" class="w-full px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-brand-emerald font-bold rounded-lg text-[11px] flex items-center justify-center gap-1.5 transition-colors border border-brand-emerald/30">
+                    <i class="fas fa-bolt"></i>
+                    <span>تعبئة بيانات الأدمن (admin@lab.com / 12345)</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- ========================================== -->
+        <!-- FORM 2: REGISTER -->
+        <!-- ========================================== -->
+        <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="hidden space-y-4 text-xs">
+            
+            <!-- Full Name -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">الاسم بالكامل *</label>
+                <div class="relative">
+                    <input type="text" id="reg-name" required placeholder="أدخل اسمك الكريم" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-2.5 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                    <i class="fas fa-user absolute left-3.5 top-3 text-slate-500"></i>
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">البريد الإلكتروني *</label>
+                <div class="relative">
+                    <input type="email" id="reg-email" required placeholder="name@example.com" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-2.5 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                    <i class="fas fa-envelope absolute left-3.5 top-3 text-slate-500"></i>
+                </div>
+            </div>
+
+            <!-- Phone -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">رقم الهاتف / الواتساب</label>
+                <div class="relative">
+                    <input type="tel" id="reg-phone" placeholder="+966501234567" dir="ltr"
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-2.5 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all text-right">
+                    <i class="fas fa-phone absolute left-3.5 top-3 text-slate-500"></i>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">كلمة المرور (5 خانات على الأقل) *</label>
+                <div class="relative">
+                    <input type="password" id="reg-password" required minlength="5" placeholder="••••••••" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-2.5 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                    <button type="button" onclick="togglePasswordVisibility('reg-password', this)" class="absolute left-3.5 top-2.5 text-slate-500 hover:text-slate-300">
+                        <i class="fas fa-eye text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">تأكيد كلمة المرور *</label>
+                <div class="relative">
+                    <input type="password" id="reg-password-confirm" required minlength="5" placeholder="••••••••" 
+                           class="w-full bg-slate-900/90 border border-slate-700 focus:border-brand-emerald rounded-xl px-4 py-2.5 pl-10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-brand-emerald/40 transition-all">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-register-submit" class="w-full py-3 px-4 bg-brand-emerald hover:bg-brand-emeraldDark text-white font-extrabold text-sm rounded-xl shadow-lg shadow-brand-emerald/25 hover:shadow-brand-emerald/40 transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-user-plus"></i>
+                <span>إنشاء الحساب ودخول المتجر</span>
+            </button>
+        </form>
+
+        <!-- Guest Shopping Link -->
+        <div class="mt-6 pt-4 border-t border-slate-700/60 text-center">
+            <a href="code_artifact (1).html" class="text-xs text-slate-400 hover:text-brand-emerald transition-colors font-bold flex items-center justify-center gap-1.5">
+                <span>متابعة التصفح كزائر بدون حساب</span>
+                <i class="fas fa-arrow-left text-[10px]"></i>
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-md w-full mx-auto text-center py-3 text-[11px] text-slate-500">
+        جميع الحقوق محفوظة &copy; متجر لبسني | نظام أمان ومصادقة مشفر
+    </footer>
+
+    <script>
+        // Check if already logged in on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentUser = ShopDB.getCurrentUser();
+            if (currentUser) {
+                // If already logged in, redirect based on role
+                if (currentUser.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'code_artifact (1).html';
+                }
+            }
+        });
+
+        // Tab Switching
+        function switchAuthTab(tab) {
+            hideAlert();
+            const loginBtn = document.getElementById('tab-login-btn');
+            const regBtn = document.getElementById('tab-register-btn');
+            const formLogin = document.getElementById('form-login');
+            const formRegister = document.getElementById('form-register');
+
+            if (tab === 'login') {
+                loginBtn.className = "auth-tab active flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2";
+                regBtn.className = "auth-tab flex-1 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
+                formLogin.classList.remove('hidden');
+                formRegister.classList.add('hidden');
+            } else {
+                regBtn.className = "auth-tab active flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2";
+                loginBtn.className = "auth-tab flex-1 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
+                formRegister.classList.remove('hidden');
+                formLogin.classList.add('hidden');
+            }
+        }
+
+        // Toggle Password Visibility
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-sm text-brand-emerald';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-sm text-slate-500';
+            }
+        }
+
+        // Fill Admin Credentials Shortcut
+        function fillAdminCredentials() {
+            document.getElementById('login-email').value = 'admin@lab.com';
+            document.getElementById('login-password').value = '12345';
+            showAlert('تم ملء بيانات حساب المدير! اضغط الآن على "تسجيل الدخول"', 'success');
+        }
+
+        // Alert Helper
+        function showAlert(message, type = 'error') {
+            const alertBox = document.getElementById('auth-alert');
+            const alertText = document.getElementById('auth-alert-text');
+            const alertIcon = document.getElementById('auth-alert-icon');
+
+            alertText.textContent = message;
+            if (type === 'error') {
+                alertBox.className = "mb-4 p-3.5 rounded-2xl text-xs font-bold flex items-start gap-2.5 bg-rose-500/20 border border-rose-500/40 text-rose-300";
+                alertIcon.className = "fas fa-circle-exclamation text-base mt-0.5 text-rose-400";
+            } else if (type === 'success') {
+                alertBox.className = "mb-4 p-3.5 rounded-2xl text-xs font-bold flex items-start gap-2.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300";
+                alertIcon.className = "fas fa-circle-check text-base mt-0.5 text-emerald-400";
+            } else if (type === 'warning') {
+                alertBox.className = "mb-4 p-3.5 rounded-2xl text-xs font-bold flex items-start gap-2.5 bg-amber-500/20 border border-amber-500/40 text-amber-300";
+                alertIcon.className = "fas fa-triangle-exclamation text-base mt-0.5 text-amber-400";
+            }
+
+            alertBox.classList.remove('hidden');
+        }
+
+        function hideAlert() {
+            document.getElementById('auth-alert').classList.add('hidden');
+        }
+
+        // ==========================================
+        // LOGIN SUBMIT HANDLER
+        // ==========================================
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            hideAlert();
+
+            const emailInput = document.getElementById('login-email').value;
+            const passwordInput = document.getElementById('login-password').value;
+            const submitBtn = document.getElementById('btn-login-submit');
+
+            // 1. Anti-injection check before processing
+            const emailCheck = SecurityHelper.detectMaliciousPayload(emailInput);
+            const passCheck = SecurityHelper.detectMaliciousPayload(passwordInput);
+
+            if (!emailCheck.safe || !passCheck.safe) {
+                showAlert('تم اكتشاف محاولة إدخال كود غير آمن! تم حظر الطلب للحماية.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>جاري التحقق من الحساب في Supabase...</span>';
+
+            try {
+                // Call authentication service
+                const result = await ShopDB.loginUser(emailInput, passwordInput);
+
+                if (!result.success) {
+                    if (result.reason === 'not_found') {
+                        // User not found in Supabase!
+                        showAlert('عفواً، هذا البريد غير مسجل في قاعدة البيانات. تم تحويلك لإنشاء حساب جديد.', 'warning');
+                        // Switch to register tab and pre-fill email
+                        document.getElementById('reg-email').value = emailInput;
+                        switchAuthTab('register');
+                    } else {
+                        showAlert(result.message, 'error');
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> <span>تسجيل الدخول ومتابعة</span>';
+                    return;
+                }
+
+                // Login successful!
+                const user = result.user;
+
+                if (user.role === 'admin' || user.email === 'admin@lab.com') {
+                    showAlert('مرحباً بك يا مدير المتجر! جاري فتح لوحة التحكم...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 800);
+                } else {
+                    showAlert(`أهلاً بك يا ${user.name || 'عميلنا العزيز'}! جاري نقلك للمتجر...`, 'success');
+                    setTimeout(() => {
+                        window.location.href = 'code_artifact (1).html';
+                    }, 800);
+                }
+
+            } catch (err) {
+                console.error("Login Error:", err);
+                showAlert(err.message || 'حدث خطأ أثناء تسجيل الدخول', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> <span>تسجيل الدخول ومتابعة</span>';
+            }
+        }
+
+        // ==========================================
+        // REGISTER SUBMIT HANDLER
+        // ==========================================
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            hideAlert();
+
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-password-confirm').value;
+            const submitBtn = document.getElementById('btn-register-submit');
+
+            // 1. Anti-injection check
+            for (const val of [name, email, phone, password, confirmPassword]) {
+                const check = SecurityHelper.detectMaliciousPayload(val);
+                if (!check.safe) {
+                    showAlert('تم رفض الإدخال بسبب محتوى غير آمن.', 'error');
+                    return;
+                }
+            }
+
+            // 2. Validate password match
+            if (password !== confirmPassword) {
+                showAlert('كلمتا المرور غير متطابقتين!', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>جاري حفظ الحساب في Supabase...</span>';
+
+            try {
+                const result = await ShopDB.registerUser({
+                    email,
+                    password,
+                    full_name: name,
+                    phone
+                });
+
+                showAlert('تم إنشاء حسابك بنجاح! جاري تحويلك إلى المتجر الآن...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'code_artifact (1).html';
+                }, 1000);
+
+            } catch (err) {
+                console.error("Register Error:", err);
+                showAlert(err.message || 'فشل إنشاء الحساب في Supabase', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> <span>إنشاء الحساب ودخول المتجر</span>';
+            }
+        }
+    </script>
+</body>
+</html>
